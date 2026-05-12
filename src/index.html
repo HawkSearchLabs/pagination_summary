@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>HawkSearch Rapid UI</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <script type="module" src="https://cdn.jsdelivr.net/npm/@bridgeline-digital/hawksearch-handlebars-ui@6.3.8/dist/hawksearch-handlebars-ui.min.js"></script>
+        <style>
+            body {
+                font-family: Arial, Helvetica, sans-serif;
+                font-size: 16px;
+            }
+            .layout-container {
+                margin: 0 auto;
+                min-width: 340px;
+                max-width: 1280px;
+            }
+        </style>
+        <script type="text/javascript">
+            customElements.define('pagination-summary', class extends HTMLElement {
+                constructor () {
+                    super();
+                    this.attachShadow({mode: 'open'});
+                    addEventListener('hawksearch:bind-pagination', (event) => {
+                        this.shadowRoot.innerHTML = '';
+                        const summaryDiv = document.createElement('div');
+                        summaryDiv.classList.add('pagination__summary');
+                        if (event.detail?.pageSize) {
+                            const firstRecord = (event.detail.page - 1) * event.detail.pageSize + 1;
+                            let lastRecord = firstRecord + event.detail.pageSize - 1;
+                            if (lastRecord > event.detail.totalResults) {
+                                lastRecord = event.detail.totalResults;
+                            }
+                            summaryDiv.innerText = 'Showing ' + firstRecord + ' to ' + lastRecord + ' of ' + event.detail.totalResults + ' results';
+                        } else {
+                            summaryDiv.innerText = '';
+                        }
+                        this.shadowRoot.append(summaryDiv);
+                    });
+                }
+            });
+            addEventListener("hawksearch:loaded", () => {
+                HawkSearch.init({
+                    clientId: '{{your_client_guid}}',
+                    search: {
+                        url: window.location.pathname,		// Url to your site's search page
+                        endpointUrl: '{{your_search_endpoint}}',
+                        itemTypes: {
+                            default: 'products'
+                        }
+                    },
+                    components: {
+                        'pagination': {
+                            template: `
+                                <div class="pagination flex-vertical-center">
+                                    <div class="pagination__pages">
+                                        {{#if displayFirstLink}}
+                                            <span hawksearch-page="1" class="link pagination__page pagination__page--first" title="{{strings.first}}">
+                                                <hawksearch-icon name="chevron-back" size="1.2em"></hawksearch-icon>
+                                            </span>
+                                        {{/if}}
+                                        {{#if displayPreviousLink}}
+                                            <a
+                                                hawksearch-page="{{subtract page 1}}"
+                                                rel="prev"
+                                                href="{{pageUrl (subtract page 1)}}"
+                                                class="pagination__page pagination__page--previous"
+                                                title="{{strings.previous}}"
+                                            >
+                                                <hawksearch-icon name="chevron-left" size="1.2em"></hawksearch-icon>
+                                            </a>
+                                        {{/if}}
+                                        {{#each pages}}
+                                            {{#if (eq this @root.page)}}
+                                                <span class="pagination__page pagination__page--selected">{{this}}</span>
+                                            {{else}}
+                                                <a hawksearch-page="{{this}}" href="{{pageUrl this}}" class="pagination__page">{{this}}</a>
+                                            {{/if}}
+                                        {{/each}}
+                                        {{#if displayNextLink}}
+                                            <a
+                                                hawksearch-page="{{add page 1}}"
+                                                rel="next"
+                                                href="{{pageUrl (add page 1)}}"
+                                                class="pagination__page pagination__page--next"
+                                                title="{{strings.next}}"
+                                            >
+                                                <hawksearch-icon name="chevron-right" size="1.2em"></hawksearch-icon>
+                                            </a>
+                                        {{/if}}
+                                        {{#if displayLastLink}}
+                                            <span hawksearch-page="{{totalPages}}" class="link pagination__page pagination__page--last" title="{{strings.last}}">
+                                                <hawksearch-icon name="chevron-forward" size="1.2em"></hawksearch-icon>
+                                            </span>
+                                        {{/if}}
+                                    </div>
+                                </div>
+                            `
+                        },
+                        'search-results': {
+                            template: `
+                                <hawksearch-modified-query></hawksearch-modified-query>
+                                <hawksearch-query-suggestions></hawksearch-query-suggestions>
+                                <div class="row">
+                                    <div class="column column--12 column-md--4">
+                                        <hawksearch-content-zone name="LeftTop"></hawksearch-content-zone>
+                                        <hawksearch-facets-list></hawksearch-facets-list>
+                                        <hawksearch-content-zone name="LeftBottom"></hawksearch-content-zone>
+                                    </div>
+                                    <div class="column column--12 column-md--8">
+                                        <hawksearch-content-zone name="Top"></hawksearch-content-zone>
+                                        <hawksearch-content-zone name="Top2"></hawksearch-content-zone>
+                                        <hawksearch-tabs></hawksearch-tabs>
+                                        <hawksearch-selected-facets></hawksearch-selected-facets>
+                                        {{#if results.length}}
+                                        <div class="row">
+                                            <div class="column column--12">
+                                                <div class="row row--tight">
+                                                    <div class="column column--12 column-sm--4 flex-vertical-sm-center">
+                                                        <pagination-summary></pagination-summary>
+                                                    </div>
+                                                    <div class="column column--12 column-sm--4 flex-vertical-sm-center">
+                                                        <hawksearch-page-size></hawksearch-page-size>
+                                                    </div>
+                                                    <div class="column column--12 column-sm--4 flex-vertical-sm-center">
+                                                        <hawksearch-sorting></hawksearch-sorting>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {{/if}}
+                                        <hawksearch-search-results-list></hawksearch-search-results-list>
+                                        <div class="row">
+                                            <div class="column column--12 flex-vertical-sm-center">
+                                                <hawksearch-pagination></hawksearch-pagination>
+                                            </div>
+                                        </div>
+                                        <hawksearch-content-zone name="Bottom"></hawksearch-content-zone>
+                                        <hawksearch-content-zone name="Bottom2"></hawksearch-content-zone>
+                                        <hawksearch-noresult></hawksearch-noresult>
+                                    </div>
+                                </div>
+                            `
+                        }
+                    }
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <div class="layout-container">
+            <h1>HawkSearch Handlebars UI</h1>
+            <hawksearch-unifiedsearch-field></hawksearch-unifiedsearch-field>
+            <hawksearch-search-results></hawksearch-search-results>
+        </div>
+    </body>
+</html>
